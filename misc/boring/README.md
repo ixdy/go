@@ -68,15 +68,31 @@ and should need no other modifications.
 
 ## Building from Bazel
 
-Using an alternate toolchain from Bazel is not as clean as it might be.
-Today, as of Bazel 0.5.3 and the bazelbuild/rules_go tag 0.5.3,
-it is necessary to define a `go-boringcrypto.bzl` file that duplicates
-some of the rules_go internal guts and then invoke its `go_repositories` rule
-instead of the standard one.
+Starting from [bazelbuild/rules_go](https://github.com/bazelbuild/rules_go)
+tag 0.7.1, simply download the BoringCrypto-enabled Go SDK using 
+`go_download_sdk()` before calling `go_register_toolchains()`.
 
-See https://gist.github.com/rsc/6f63d54886c9c50fa924597d7355bc93 for a minimal example.
+For example, to use Go 1.9.2 with BoringCrypto on Linux, use the following lines
+in `WORKSPACE`:
+```python
+load("@io_bazel_rules_go//go:def.bzl", "go_rules_dependencies", "go_download_sdk", "go_register_toolchains")
 
-Note that in the example that the Bazel `WORKSPACE` file still refers to the release as "go1.8.3" not "go1.8.3b2".
+go_rules_dependencies()
+
+go_download_sdk(
+    name = "go_sdk",
+    sdks = {
+       "linux_amd64": ("go1.9.2b4.linux-amd64.tar.gz", "7c5e9a033ddc3ab36646e3bac7fd16962742710c70c18122e44a9ab56cdd3cf7"),
+    },
+    urls = ["https://storage.googleapis.com/go-boringcrypto/{}"],
+)
+
+go_register_toolchains()
+```
+
+**Note**: you must *not* enable `pure` mode, since cgo must be enabled. To
+ensure that binaries are linked with BoringCrypto, you can set `pure = "off"` on
+all relevant `go_binary` rules.
 
 ## Caveat
 
